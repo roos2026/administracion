@@ -5,7 +5,7 @@ import com.academia.dao.MensualidadDAO;
 import com.academia.dao.PagoDAO;
 import com.academia.model.Mensualidad;
 import com.academia.model.PagoAbono;
-import com.academia.service.ExcelExportService;
+
 import com.academia.service.PDFGeneratorService;
 import com.academia.service.WhatsAppService;
 import javafx.beans.property.SimpleStringProperty;
@@ -16,12 +16,12 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
-import javafx.stage.FileChooser;
+
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.File;
-import java.time.LocalDate;
+
 import java.time.YearMonth;
 import java.util.List;
 
@@ -196,8 +196,19 @@ public class CobranzasView {
             }
         });
 
-        tabla.getColumns().addAll(colPeriodo, colMatricula, colEstudiante, colVencimiento, colTotal, colSaldo, colEstado, colAcciones);
-        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tabla.getColumns().addAll(
+            java.util.List.of(
+                colPeriodo,
+                colMatricula,
+                colEstudiante,
+                colVencimiento,
+                colTotal,
+                colSaldo, 
+                colEstado, 
+                colAcciones
+            )
+        );
+        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
     }
 
     private void cargarDatos() {
@@ -428,8 +439,16 @@ public class CobranzasView {
             }
         });
 
-        tablaRecibos.getColumns().addAll(colNum, colEst, colMonto, colMetodo, colEstado, colAnular);
-        tablaRecibos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tablaRecibos.getColumns().addAll(
+            java.util.List.of(
+                colNum, 
+                colEst, 
+                colMonto, 
+                colMetodo, 
+                colEstado, 
+                colAnular)
+            );
+        tablaRecibos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         root.getChildren().addAll(new Label("Últimos 50 pagos registrados:"), tablaRecibos);
         VBox.setVgrow(tablaRecibos, Priority.ALWAYS);

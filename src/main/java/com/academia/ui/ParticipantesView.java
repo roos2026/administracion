@@ -1,6 +1,6 @@
 package com.academia.ui;
 
-import com.academia.config.AppSession;
+
 import com.academia.dao.GrupoDAO;
 import com.academia.dao.ParticipanteDAO;
 import com.academia.model.Grupo;
@@ -159,8 +159,8 @@ public class ParticipantesView {
             }
         });
 
-        tabla.getColumns().addAll(colMatricula, colNombre, colEdad, colEstado, colGrupo, colTutor, colAcciones);
-        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tabla.getColumns().addAll(java.util.List.of(colMatricula, colNombre, colEdad, colEstado, colGrupo, colTutor, colAcciones));
+        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
     }
 
     private void cargarDatos() {

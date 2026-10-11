@@ -1,12 +1,12 @@
 package com.academia.service;
 
-import com.academia.model.CierreCaja;
+
 import com.academia.model.PagoAbono;
 import com.academia.model.Participante;
 import com.academia.model.Tutor;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfPCell;
-import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfPTable; 
 import com.lowagie.text.pdf.PdfWriter;
 
 import java.awt.Color;

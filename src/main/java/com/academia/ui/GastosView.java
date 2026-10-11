@@ -125,8 +125,17 @@ public class GastosView {
             }
         });
 
-        tabla.getColumns().addAll(colFecha, colCat, colConcepto, colProv, colMonto, colMetodo, colRecurrente, colComprobante);
-        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tabla.getColumns().addAll(java.util.List.of(
+            colFecha, 
+            colCat, 
+            colConcepto, 
+            colProv, 
+            colMonto, 
+            colMetodo, 
+            colRecurrente, 
+            colComprobante)
+        );
+        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
     }
 
     private void cargarDatos() {

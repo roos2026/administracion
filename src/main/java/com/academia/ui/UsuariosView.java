@@ -131,8 +131,8 @@ public class UsuariosView {
             }
         });
 
-        tabla.getColumns().addAll(colId, colUser, colNombre, colRol, colEstado, colAcciones);
-        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tabla.getColumns().addAll(java.util.List.of(colId, colUser, colNombre, colRol, colEstado, colAcciones));
+        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
     }
 
     private void cargarDatos() {

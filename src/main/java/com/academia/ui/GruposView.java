@@ -164,8 +164,17 @@ public class GruposView {
             }
         });
 
-        tabla.getColumns().addAll(colCodigo, colNombre, colDias, colHorario, colProfesor, colCupos, colCosto, colAcciones);
-        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tabla.getColumns().addAll(java.util.List.of(
+            colCodigo, 
+            colNombre, 
+            colDias, 
+            colHorario, 
+            colProfesor, 
+            colCupos, 
+            colCosto, 
+            colAcciones)
+        );
+        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
     }
 
     private void cargarDatos() {
@@ -358,8 +367,12 @@ public class GruposView {
         TableColumn<Participante, String> cEst = new TableColumn<>("Estado");
         cEst.setCellValueFactory(new PropertyValueFactory<>("estado"));
 
-        tablaAlumnos.getColumns().addAll(cMat, cNom, cEst);
-        tablaAlumnos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tablaAlumnos.getColumns().addAll(java.util.List.of(
+            cMat, 
+            cNom, 
+            cEst)
+        );
+        tablaAlumnos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         root.getChildren().addAll(lblInfo, tablaAlumnos);
         VBox.setVgrow(tablaAlumnos, Priority.ALWAYS);
