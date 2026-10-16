@@ -189,7 +189,7 @@ public class NominaView {
             }
         });
 
-        tabla.getColumns().addAll(colId, colFecha, colBeneficiario, colCategoria, colConcepto, colMonto, colMetodo, colUsuario, colAccion);
+        tabla.getColumns().addAll(java.util.List.of(colId, colFecha, colBeneficiario, colCategoria, colConcepto, colMonto, colMetodo, colUsuario, colAccion));
         tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
     }
 
