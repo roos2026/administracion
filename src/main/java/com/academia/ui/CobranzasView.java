@@ -32,6 +32,7 @@ public class CobranzasView {
     private final TableView<Mensualidad> tabla = new TableView<>();
     private final ComboBox<String> cbSemaforo = new ComboBox<>();
     private final TextField txtBusqueda = new TextField();
+    private final CheckBox chkSoloActivos = new CheckBox("Solo Alumnos Activos");
 
     public VBox crearVista(Stage stage) {
         VBox root = new VBox(16);
@@ -86,10 +87,14 @@ public class CobranzasView {
         legAmarillo.setStyle("-fx-font-size: 11px; -fx-text-fill: #92400e;");
         legRojo.setStyle("-fx-font-size: 11px; -fx-text-fill: #991b1b;");
 
+        chkSoloActivos.setSelected(true);
+        chkSoloActivos.setStyle("-fx-font-weight: bold; -fx-text-fill: #1e293b;");
+        chkSoloActivos.setOnAction(e -> cargarDatos());
+
         HBox leyenda = new HBox(8, legVerde, legAmarillo, legRojo);
         leyenda.setAlignment(Pos.CENTER_LEFT);
 
-        filterBar.getChildren().addAll(new Label("Buscar:"), txtBusqueda, lblFiltro, cbSemaforo, new Separator(), leyenda);
+        filterBar.getChildren().addAll(new Label("Buscar:"), txtBusqueda, lblFiltro, cbSemaforo, chkSoloActivos, new Separator(), leyenda);
 
         configurarTabla(stage);
 
@@ -196,11 +201,37 @@ public class CobranzasView {
             }
         });
 
+        TableColumn<Mensualidad, String> colEstadoEstudiante = new TableColumn<>("Condición");
+        colEstadoEstudiante.setCellValueFactory(cell -> new SimpleStringProperty(
+                cell.getValue().getEstadoEstudiante() != null ? cell.getValue().getEstadoEstudiante() : "ACTIVO"
+        ));
+        colEstadoEstudiante.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setGraphic(null);
+                    setText(null);
+                } else {
+                    Label lbl = new Label(item);
+                    lbl.getStyleClass().add(switch (item) {
+                        case "ACTIVO" -> "badge-activo";
+                        case "PAUSA" -> "badge-pausa";
+                        default -> "badge-inactivo";
+                    });
+                    setGraphic(lbl);
+                    setText(null);
+                }
+            }
+        });
+        colEstadoEstudiante.setPrefWidth(90);
+
         tabla.getColumns().addAll(
             java.util.List.of(
                 colPeriodo,
                 colMatricula,
                 colEstudiante,
+                colEstadoEstudiante,
                 colVencimiento,
                 colTotal,
                 colSaldo, 
@@ -214,7 +245,8 @@ public class CobranzasView {
     private void cargarDatos() {
         String semaforo = cbSemaforo.getValue();
         String busqueda = txtBusqueda.getText();
-        List<Mensualidad> mensualidades = mensualidadDAO.listar(semaforo, busqueda);
+        boolean soloActivos = chkSoloActivos.isSelected();
+        List<Mensualidad> mensualidades = mensualidadDAO.listar(semaforo, busqueda, soloActivos);
         tabla.setItems(FXCollections.observableArrayList(mensualidades));
     }
 
@@ -453,7 +485,12 @@ public class CobranzasView {
         root.getChildren().addAll(new Label("Últimos 50 pagos registrados:"), tablaRecibos);
         VBox.setVgrow(tablaRecibos, Priority.ALWAYS);
 
-        modal.setScene(new Scene(root, 720, 450));
+        Scene sceneModal = new Scene(root, 1024, 650);
+        try {
+            sceneModal.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
+        } catch (Exception ignored) {}
+        modal.setScene(sceneModal);
+        modal.setMaximized(true);
         modal.showAndWait();
     }
 

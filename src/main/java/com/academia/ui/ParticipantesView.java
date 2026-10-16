@@ -201,6 +201,18 @@ public class ParticipantesView {
         Label lblEdadCalculada = new Label("Edad: 10 años (Menor de edad)");
         lblEdadCalculada.setStyle("-fx-font-weight: bold; -fx-text-fill: #2563eb;");
 
+        DatePicker dpInscripcion = new DatePicker(LocalDate.now());
+        Label lblCicloInfo = new Label();
+        lblCicloInfo.setStyle("-fx-text-fill: #0891b2; -fx-font-weight: bold; -fx-font-size: 12px;");
+
+        Runnable actualizarCiclo = () -> {
+            LocalDate f = dpInscripcion.getValue() != null ? dpInscripcion.getValue() : LocalDate.now();
+            com.academia.service.BillingCycleService.VencimientoInfo v = com.academia.service.BillingCycleService.calcularPrimerVencimiento(f);
+            lblCicloInfo.setText("📅 Vence 1ª Cuota: " + v.getFechaVencimiento() + " (Ciclo asignado: día " + v.getDiaCorteHabitual() + ")");
+        };
+        dpInscripcion.valueProperty().addListener((obs, old, val) -> actualizarCiclo.run());
+        actualizarCiclo.run();
+
         TextField txtEmergenciaNombre = new TextField();
         txtEmergenciaNombre.setPromptText("Nombre contacto emergencia");
 
@@ -335,6 +347,7 @@ public class ParticipantesView {
             p.setNombres(txtNombres.getText().trim());
             p.setApellidos(txtApellidos.getText().trim());
             p.setFechaNacimiento(dpNacimiento.getValue());
+            p.setFechaInscripcion(dpInscripcion.getValue() != null ? dpInscripcion.getValue() : LocalDate.now());
             p.setContactoEmergenciaNombre(txtEmergenciaNombre.getText().trim());
             p.setContactoEmergenciaTelefono(txtEmergenciaTel.getText().trim());
             p.setAlergiasCondiciones(txtAlergias.getText().trim());
@@ -380,6 +393,7 @@ public class ParticipantesView {
         form.getChildren().addAll(
                 lblSec1,
                 new Label("Matrícula Única:"), txtMatricula,
+                new Label("Fecha de Inscripción:"), dpInscripcion, lblCicloInfo,
                 new Label("Nombres:"), txtNombres,
                 new Label("Apellidos:"), txtApellidos,
                 new Label("Fecha de Nacimiento:"), dpNacimiento, lblEdadCalculada,
@@ -402,7 +416,13 @@ public class ParticipantesView {
         );
 
         scroll.setContent(form);
-        modal.setScene(new Scene(scroll, 560, 680));
+        scroll.setFitToWidth(true);
+        Scene sceneModal = new Scene(scroll, 1024, 720);
+        try {
+            sceneModal.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
+        } catch (Exception ignored) {}
+        modal.setScene(sceneModal);
+        modal.setMaximized(true);
         modal.showAndWait();
     }
 
@@ -453,6 +473,11 @@ public class ParticipantesView {
             participanteDAO.cambiarEstado(p.getId(), nuevoEstado, motivo);
             modal.close();
             cargarDatos();
+
+            String mensajeAccion = "ACTIVO".equalsIgnoreCase(nuevoEstado)
+                    ? "El estudiante ha sido REACTIVADO con éxito y se reincorporó automáticamente a la lista de mensualidades del período actual."
+                    : "El estudiante ha sido puesto en " + nuevoEstado + " y se ha quitado automáticamente de la lista activa de mensualidades.";
+            mostrarAlerta("Estado Actualizado", mensajeAccion, Alert.AlertType.INFORMATION);
         });
 
         botones.getChildren().addAll(btnCancelar, btnConfirmar);

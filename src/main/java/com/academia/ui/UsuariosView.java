@@ -30,7 +30,7 @@ public class UsuariosView {
         HBox topBar = new HBox(12);
         topBar.setAlignment(Pos.CENTER_LEFT);
 
-        Label lblTitulo = new Label("Gestión de Usuarios y Permisos");
+        Label lblTitulo = new Label("Gestión de Usuarios y Accesos");
         lblTitulo.getStyleClass().add("header-title");
         HBox.setHgrow(lblTitulo, Priority.ALWAYS);
 
@@ -40,7 +40,7 @@ public class UsuariosView {
 
         topBar.getChildren().addAll(lblTitulo, btnNuevo);
 
-        Label lblInfo = new Label("Administra los accesos al sistema, contraseñas y asignación de roles (Admin, Secretaria, Profesor).");
+        Label lblInfo = new Label("Administra las cuentas del personal. Puedes crear los usuarios reales de la academia y eliminar los de prueba cuando ya no los necesites.");
         lblInfo.setStyle("-fx-text-fill: #64748b; -fx-font-size: 13px;");
 
         configurarTabla(stage);
@@ -93,15 +93,22 @@ public class UsuariosView {
         colEstado.setPrefWidth(85);
 
         TableColumn<Usuario, Void> colAcciones = new TableColumn<>("Acciones");
-        colAcciones.setPrefWidth(220);
+        colAcciones.setPrefWidth(260);
         colAcciones.setCellFactory(col -> new TableCell<>() {
-            private final Button btnClave = new Button("Cambiar Clave");
+            private final Button btnEditar = new Button("Editar");
+            private final Button btnClave = new Button("Clave");
             private final Button btnEliminar = new Button("Eliminar");
-            private final HBox panel = new HBox(6, btnClave, btnEliminar);
+            private final HBox panel = new HBox(6, btnEditar, btnClave, btnEliminar);
 
             {
+                btnEditar.getStyleClass().add("btn-secondary");
                 btnClave.getStyleClass().add("btn-secondary");
                 btnEliminar.getStyleClass().add("btn-danger");
+
+                btnEditar.setOnAction(e -> {
+                    Usuario u = getTableView().getItems().get(getIndex());
+                    abrirModalEditarUsuario(stage, u);
+                });
 
                 btnClave.setOnAction(e -> {
                     Usuario u = getTableView().getItems().get(getIndex());
@@ -121,18 +128,19 @@ public class UsuariosView {
                     setGraphic(null);
                 } else {
                     Usuario u = getTableView().getItems().get(getIndex());
-                    // Proteger al admin principal ID 1 o al usuario con sesión activa
-                    boolean esAdminPrincipal = u.getId() == 1;
+                    // Solo se deshabilita la eliminación para el usuario que tiene su propia sesión activa
                     boolean esUsuarioActual = AppSession.getUsuarioActual() != null && AppSession.getUsuarioActual().getId() == u.getId();
-
-                    btnEliminar.setDisable(esAdminPrincipal || esUsuarioActual);
+                    btnEliminar.setDisable(esUsuarioActual);
+                    if (esUsuarioActual) {
+                        btnEliminar.setTooltip(new Tooltip("No puedes eliminar tu propia sesión activa"));
+                    }
                     setGraphic(panel);
                 }
             }
         });
 
-        tabla.getColumns().addAll(java.util.List.of(colId, colUser, colNombre, colRol, colEstado, colAcciones));
-        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        tabla.getColumns().addAll(colId, colUser, colNombre, colRol, colEstado, colAcciones);
+        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
     }
 
     private void cargarDatos() {
@@ -217,7 +225,73 @@ public class UsuariosView {
                 new Separator(), botones
         );
 
-        modal.setScene(new Scene(form, 400, 340));
+        modal.setScene(new Scene(form, 400, 360));
+        modal.showAndWait();
+    }
+
+    private void abrirModalEditarUsuario(Stage stage, Usuario u) {
+        Stage modal = new Stage();
+        modal.initModality(Modality.WINDOW_MODAL);
+        modal.initOwner(stage);
+        modal.setTitle("Editar Usuario: " + u.getUsername());
+
+        VBox form = new VBox(12);
+        form.setPadding(new Insets(20));
+
+        TextField txtUser = new TextField(u.getUsername());
+        TextField txtNombre = new TextField(u.getNombreCompleto());
+        ComboBox<String> cbRol = new ComboBox<>();
+        cbRol.getItems().addAll("ADMIN", "SECRETARIA", "PROFESOR");
+        cbRol.setValue(u.getRol());
+
+        PasswordField txtNuevaClave = new PasswordField();
+        txtNuevaClave.setPromptText("Dejar en blanco para mantener la clave actual");
+
+        CheckBox chkActivo = new CheckBox("Usuario Activo");
+        chkActivo.setSelected(u.isActivo());
+
+        HBox botones = new HBox(10);
+        botones.setAlignment(Pos.CENTER_RIGHT);
+
+        Button btnCancelar = new Button("Cancelar");
+        btnCancelar.setOnAction(e -> modal.close());
+
+        Button btnGuardar = new Button("Guardar Cambios");
+        btnGuardar.getStyleClass().add("btn-primary");
+        btnGuardar.setOnAction(e -> {
+            String uName = txtUser.getText().trim();
+            String nComp = txtNombre.getText().trim();
+            if (uName.isBlank() || nComp.isBlank()) {
+                mostrarAlerta("Campos requeridos", "Usuario y nombre completo no pueden estar vacíos.", Alert.AlertType.WARNING);
+                return;
+            }
+
+            u.setUsername(uName.toLowerCase());
+            u.setNombreCompleto(nComp);
+            u.setRol(cbRol.getValue());
+            u.setActivo(chkActivo.isSelected());
+
+            boolean ok = usuarioDAO.actualizarUsuario(u, txtNuevaClave.getText());
+            if (ok) {
+                mostrarAlerta("Éxito", "Usuario '" + u.getUsername() + "' actualizado correctamente.", Alert.AlertType.INFORMATION);
+                modal.close();
+                cargarDatos();
+            } else {
+                mostrarAlerta("Error", "No se pudo actualizar el usuario.", Alert.AlertType.ERROR);
+            }
+        });
+
+        botones.getChildren().addAll(btnCancelar, btnGuardar);
+        form.getChildren().addAll(
+                new Label("Usuario (Login):"), txtUser,
+                new Label("Nombre Completo:"), txtNombre,
+                new Label("Rol Asignado:"), cbRol,
+                new Label("Nueva Contraseña (opcional):"), txtNuevaClave,
+                chkActivo,
+                new Separator(), botones
+        );
+
+        modal.setScene(new Scene(form, 400, 360));
         modal.showAndWait();
     }
 
@@ -235,17 +309,27 @@ public class UsuariosView {
     }
 
     private void confirmarEliminacion(Stage stage, Usuario u) {
+        if (AppSession.getUsuarioActual() != null && AppSession.getUsuarioActual().getId() == u.getId()) {
+            mostrarAlerta("Acción denegada", "No puedes eliminar tu propia cuenta mientras tienes la sesión iniciada.", Alert.AlertType.WARNING);
+            return;
+        }
+
+        if ("ADMIN".equalsIgnoreCase(u.getRol()) && usuarioDAO.contarAdmins() <= 1) {
+            mostrarAlerta("Acción denegada", "No puedes eliminar el único Administrador del sistema. Crea primero otro usuario con rol ADMIN.", Alert.AlertType.WARNING);
+            return;
+        }
+
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.initOwner(stage);
         confirm.setTitle("Confirmar Eliminación");
-        confirm.setHeaderText("¿Estás seguro de eliminar el usuario: " + u.getUsername() + "?");
-        confirm.setContentText("Esta acción eliminará el acceso para " + u.getNombreCompleto() + " (" + u.getRol() + ").");
+        confirm.setHeaderText("¿Estás seguro de eliminar permanentemente al usuario '" + u.getUsername() + "'?");
+        confirm.setContentText("Esta acción borrará el acceso para " + u.getNombreCompleto() + " (" + u.getRol() + ").");
 
         confirm.showAndWait().ifPresent(resp -> {
             if (resp == ButtonType.OK) {
                 boolean ok = usuarioDAO.eliminarUsuario(u.getId());
                 if (ok) {
-                    mostrarAlerta("Eliminado", "Usuario eliminado con éxito.", Alert.AlertType.INFORMATION);
+                    mostrarAlerta("Eliminado", "Usuario eliminado con éxito de la base de datos.", Alert.AlertType.INFORMATION);
                     cargarDatos();
                 } else {
                     mostrarAlerta("Error", "No se pudo eliminar el usuario.", Alert.AlertType.ERROR);

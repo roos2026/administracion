@@ -124,9 +124,63 @@ public class UsuarioDAO {
         }
     }
 
+    public boolean actualizarUsuario(Usuario u, String nuevaClaveOpcional) {
+        String sql;
+        boolean cambiarClave = nuevaClaveOpcional != null && !nuevaClaveOpcional.isBlank();
+        if (cambiarClave) {
+            sql = "UPDATE usuarios SET username = ?, nombre_completo = ?, rol = ?, activo = ?, password_hash = ? WHERE id = ?";
+        } else {
+            sql = "UPDATE usuarios SET username = ?, nombre_completo = ?, rol = ?, activo = ? WHERE id = ?";
+        }
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, u.getUsername().toLowerCase().trim());
+            ps.setString(2, u.getNombreCompleto().trim());
+            ps.setString(3, u.getRol());
+            ps.setInt(4, u.isActivo() ? 1 : 0);
+            if (cambiarClave) {
+                ps.setString(5, BCrypt.hashpw(nuevaClaveOpcional.trim(), BCrypt.gensalt(10)));
+                ps.setInt(6, u.getId());
+            } else {
+                ps.setInt(5, u.getId());
+            }
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public int contarAdmins() {
+        String sql = "SELECT COUNT(*) FROM usuarios WHERE rol = 'ADMIN' AND activo = 1";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            return rs.next() ? rs.getInt(1) : 0;
+        } catch (SQLException e) {
+            return 0;
+        }
+    }
+
     public boolean eliminarUsuario(int id) {
-        if (id == 1) return false; // Protección del superusuario admin principal
-        String sql = "DELETE FROM usuarios WHERE id = ? AND id != 1";
+        // Verificar que no se quede el sistema sin ningún administrador
+        String sqlCheckRol = "SELECT rol FROM usuarios WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement psCheck = conn.prepareStatement(sqlCheckRol)) {
+            psCheck.setInt(1, id);
+            try (ResultSet rs = psCheck.executeQuery()) {
+                if (rs.next() && "ADMIN".equalsIgnoreCase(rs.getString("rol"))) {
+                    if (contarAdmins() <= 1) {
+                        return false; // Debe existir al menos un administrador en el sistema
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        String sql = "DELETE FROM usuarios WHERE id = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);

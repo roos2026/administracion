@@ -36,7 +36,7 @@ public class MainDashboardView {
         rootLayout.setTop(crearHeader());
         rootLayout.setCenter(crearDashboardResumen());
 
-        Scene scene = new Scene(rootLayout, 1180, 740);
+        Scene scene = new Scene(rootLayout, 1780, 1000);
         scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
         stage.setScene(scene);
         stage.setMaximized(true);
@@ -83,10 +83,20 @@ public class MainDashboardView {
         Button btnAlumnos = crearBotonMenu("👥  Participantes & Fichas", () -> rootLayout.setCenter(new ParticipantesView().crearVista(stage)));
         Button btnCobros = crearBotonMenu("💳  Mensualidades & Pagos", () -> rootLayout.setCenter(new CobranzasView().crearVista(stage)));
 
-        // Módulo de gastos y nómina: si es ADMIN tiene acceso total
-        Button btnGastos = crearBotonMenu("💸  Gastos, Compras & Nómina", () -> {
+        // Módulo de nómina (Profesores y Secretaría)
+        Button btnNomina = crearBotonMenu("💵  Pago de Nómina", () -> {
             if (AppSession.isSecretaria()) {
-                Alert a = new Alert(Alert.AlertType.WARNING, "Acceso restringido: las secretarias no tienen acceso al módulo confidencial de nóminas y balances.");
+                Alert a = new Alert(Alert.AlertType.WARNING, "Acceso restringido: Las secretarias no tienen acceso al módulo de nóminas.");
+                a.showAndWait();
+                return;
+            }
+            rootLayout.setCenter(new NominaView().crearVista(stage));
+        });
+
+        // Módulo de gastos y compras
+        Button btnGastos = crearBotonMenu("💸  Gastos & Compras", () -> {
+            if (AppSession.isSecretaria()) {
+                Alert a = new Alert(Alert.AlertType.WARNING, "Acceso restringido: Las secretarias no tienen acceso al módulo confidencial de gastos.");
                 a.showAndWait();
                 return;
             }
@@ -95,9 +105,19 @@ public class MainDashboardView {
 
         Button btnCaja = crearBotonMenu("🗄️  Cierre de Caja Diario", () -> rootLayout.setCenter(new CajaView().crearVista(stage)));
 
+        // Módulo de Usuarios y Seguridad (Solo Admin)
+        Button btnUsuarios = crearBotonMenu("🔐  Usuarios & Accesos", () -> {
+            if (AppSession.isSecretaria()) {
+                Alert a = new Alert(Alert.AlertType.WARNING, "Acceso restringido: Solo administradores pueden gestionar usuarios y accesos.");
+                a.showAndWait();
+                return;
+            }
+            rootLayout.setCenter(new UsuariosView().crearVista(stage));
+        });
+
         Button btnBackup = crearBotonMenu("💾  Respaldar Base de Datos", this::ejecutarRespaldo);
 
-        sidebar.getChildren().addAll(lblTitle, btnDash, btnGrupos, btnAlumnos, btnCobros, btnGastos, btnCaja, new Separator(), btnBackup);
+        sidebar.getChildren().addAll(lblTitle, btnDash, btnGrupos, btnAlumnos, btnCobros, btnNomina, btnGastos, btnCaja, btnUsuarios, new Separator(), btnBackup);
         return sidebar;
     }
 
@@ -180,6 +200,19 @@ public class MainDashboardView {
         btnArqueo.setOnAction(e -> rootLayout.setCenter(new CajaView().crearVista(stage)));
 
         boxBotones.getChildren().addAll(btnGruposAcc, btnInscribir, btnCobrar, btnArqueo);
+
+        if (AppSession.isAdmin()) {
+            Button btnNominaAcc = new Button("💵 Pagar Nómina");
+            btnNominaAcc.getStyleClass().add("btn-secondary");
+            btnNominaAcc.setOnAction(e -> rootLayout.setCenter(new NominaView().crearVista(stage)));
+
+            Button btnUsuariosAcc = new Button("🔐 Usuarios");
+            btnUsuariosAcc.getStyleClass().add("btn-secondary");
+            btnUsuariosAcc.setOnAction(e -> rootLayout.setCenter(new UsuariosView().crearVista(stage)));
+
+            boxBotones.getChildren().addAll(btnNominaAcc, btnUsuariosAcc);
+        }
+
         secAcciones.getChildren().addAll(lblAcc, boxBotones);
 
         content.getChildren().addAll(lblTitulo, flowTarjetas, secFinanzas, secAcciones);

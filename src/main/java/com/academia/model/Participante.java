@@ -19,9 +19,12 @@ public class Participante {
     private Integer grupoId;
     private String nombreGrupo;
     private Tutor tutor;
+    private LocalDate fechaInscripcion;
+    private int diaCorteHabitual = 30; // 15 o 30
 
     public Participante() {
         this.estado = "ACTIVO";
+        this.fechaInscripcion = LocalDate.now();
     }
 
     public int getEdad() {
@@ -81,6 +84,12 @@ public class Participante {
 
     public Tutor getTutor() { return tutor; }
     public void setTutor(Tutor tutor) { this.tutor = tutor; }
+
+    public LocalDate getFechaInscripcion() { return fechaInscripcion; }
+    public void setFechaInscripcion(LocalDate fechaInscripcion) { this.fechaInscripcion = fechaInscripcion; }
+
+    public int getDiaCorteHabitual() { return diaCorteHabitual; }
+    public void setDiaCorteHabitual(int diaCorteHabitual) { this.diaCorteHabitual = diaCorteHabitual; }
 
     @Override
     public String toString() {

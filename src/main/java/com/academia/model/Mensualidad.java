@@ -18,6 +18,7 @@ public class Mensualidad {
     private double montoTotal;
     private double saldoPendiente;
     private String estadoPago; // PAGADO, VENCE_PRONTO, VENCIDO
+    private String estadoEstudiante; // ACTIVO, PAUSA, INACTIVO
 
     public Mensualidad() {}
 
@@ -87,4 +88,7 @@ public class Mensualidad {
 
     public String getEstadoPago() { return estadoPago; }
     public void setEstadoPago(String estadoPago) { this.estadoPago = estadoPago; }
+
+    public String getEstadoEstudiante() { return estadoEstudiante; }
+    public void setEstadoEstudiante(String estadoEstudiante) { this.estadoEstudiante = estadoEstudiante; }
 }

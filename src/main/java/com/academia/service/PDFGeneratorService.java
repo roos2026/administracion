@@ -151,6 +151,70 @@ public class PDFGeneratorService {
         }
     }
 
+    /**
+     * Genera el Comprobante Oficial de Pago de Nómina / Sueldos / Honorarios en PDF.
+     */
+    public static boolean generarComprobanteNominaPdf(String numeroComprobante, String nombreBeneficiario, String cargo,
+                                                     String concepto, double monto, String metodoPago, String referencia,
+                                                     java.time.LocalDate fechaPago, String pagadoPor, String rutaDestinoPdf) {
+        Document document = new Document(PageSize.A5, 30, 30, 30, 30);
+        try {
+            PdfWriter.getInstance(document, new FileOutputStream(rutaDestinoPdf));
+            document.open();
+
+            Paragraph titulo = new Paragraph("ACADEMIA EDUCATIVA", FONT_TITULO);
+            titulo.setAlignment(Element.ALIGN_CENTER);
+            document.add(titulo);
+
+            Paragraph reciboNum = new Paragraph("COMPROBANTE DE PAGO DE NÓMINA / HONORARIOS\n" + numeroComprobante, FONT_SUBTITULO);
+            reciboNum.setAlignment(Element.ALIGN_CENTER);
+            document.add(reciboNum);
+
+            Paragraph fecha = new Paragraph("Fecha de Pago: " + fechaPago.toString() + "\n\n", FONT_MINI);
+            fecha.setAlignment(Element.ALIGN_CENTER);
+            document.add(fecha);
+
+            PdfPTable tabla = new PdfPTable(2);
+            tabla.setWidthPercentage(100);
+            tabla.setSpacingBefore(10f);
+            tabla.setSpacingAfter(15f);
+
+            agregarFila(tabla, "Beneficiario:", nombreBeneficiario);
+            agregarFila(tabla, "Cargo / Rol:", cargo);
+            agregarFila(tabla, "Concepto:", concepto);
+            agregarFila(tabla, "Método de Pago:", metodoPago + (referencia != null && !referencia.isBlank() ? " (Ref: " + referencia + ")" : ""));
+            agregarFila(tabla, "Procesado por:", pagadoPor);
+            agregarFila(tabla, "TOTAL PAGADO:", String.format("$%.2f", monto));
+
+            document.add(tabla);
+
+            // Firmas
+            Paragraph espacio = new Paragraph("\n\n\n");
+            document.add(espacio);
+
+            PdfPTable tablaFirmas = new PdfPTable(2);
+            tablaFirmas.setWidthPercentage(100);
+
+            PdfPCell f1 = new PdfPCell(new Phrase("___________________________\nFirma Administración / Pagador", FONT_MINI));
+            f1.setBorder(Rectangle.NO_BORDER);
+            f1.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+            PdfPCell f2 = new PdfPCell(new Phrase("___________________________\nFirma Recibí Conforme (" + nombreBeneficiario + ")", FONT_MINI));
+            f2.setBorder(Rectangle.NO_BORDER);
+            f2.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+            tablaFirmas.addCell(f1);
+            tablaFirmas.addCell(f2);
+            document.add(tablaFirmas);
+
+            document.close();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     private static void agregarFila(PdfPTable tabla, String clave, String valor) {
         PdfPCell c1 = new PdfPCell(new Phrase(clave, FONT_CUERPO_BOLD));
         c1.setBackgroundColor(new Color(241, 245, 249));

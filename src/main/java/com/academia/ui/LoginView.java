@@ -47,13 +47,13 @@ public class LoginView {
         lblUser.getStyleClass().add("form-label");
         TextField txtUser = new TextField();
         txtUser.setPromptText("ej. admin o secretaria");
-        txtUser.setText("admin"); // Conveniencia inicial
+        txtUser.setText(""); // Conveniencia inicial
 
         Label lblPass = new Label("Contraseña:");
         lblPass.getStyleClass().add("form-label");
         PasswordField txtPass = new PasswordField();
         txtPass.setPromptText("Contraseña");
-        txtPass.setText("admin123");
+        txtPass.setText("");
 
         Label lblError = new Label();
         lblError.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 12px; -fx-font-weight: bold;");
@@ -92,9 +92,10 @@ public class LoginView {
         card.getChildren().addAll(lblTitulo, lblSubtitulo, form, btnIngresar);
         root.getChildren().add(card);
 
-        Scene scene = new Scene(root, 900, 600);
+        Scene scene = new Scene(root, 1024, 650);
         scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
         stage.setScene(scene);
+        stage.setMaximized(true);
         stage.show();
     }
 }

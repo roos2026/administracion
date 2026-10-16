@@ -33,8 +33,8 @@ public class ParticipanteDAO {
             INSERT INTO participantes (
                 matricula, nombres, apellidos, fecha_nacimiento, foto_ruta,
                 contacto_emergencia_nombre, contacto_emergencia_telefono, alergias_condiciones,
-                estado, grupo_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVO', ?)
+                estado, grupo_id, dia_corte_habitual, fecha_inscripcion
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVO', ?, ?, ?)
         """;
 
         String sqlTutor = """
@@ -49,6 +49,11 @@ public class ParticipanteDAO {
                 pdf_contrato_ruta, firmado_por_nombre, firmado_por_cedula
             ) VALUES (?, 'v1.0-2026', CURRENT_TIMESTAMP, ?, ?, ?, ?)
         """;
+
+        // Calcular ciclo de pago según la regla de negocio:
+        LocalDate fechaIns = p.getFechaInscripcion() != null ? p.getFechaInscripcion() : LocalDate.now();
+        com.academia.service.BillingCycleService.VencimientoInfo infoVenc = com.academia.service.BillingCycleService.calcularPrimerVencimiento(fechaIns);
+        p.setDiaCorteHabitual(infoVenc.getDiaCorteHabitual());
 
         Connection conn = null;
         try {
@@ -67,6 +72,8 @@ public class ParticipanteDAO {
                 ps.setString(7, p.getContactoEmergenciaTelefono());
                 ps.setString(8, p.getAlergiasCondiciones());
                 ps.setObject(9, p.getGrupoId());
+                ps.setInt(10, p.getDiaCorteHabitual());
+                ps.setString(11, fechaIns.toString());
                 ps.executeUpdate();
 
                 try (ResultSet rs = ps.getGeneratedKeys()) {
@@ -105,9 +112,41 @@ public class ParticipanteDAO {
                 }
             }
 
+            // 4. Generar automáticamente la primera mensualidad con el vencimiento calculado por fórmula
+            double costoCuota = 2500.0;
+            if (p.getGrupoId() != null) {
+                String sqlCostoGrupo = "SELECT costo_mensualidad FROM grupos WHERE id = ?";
+                try (PreparedStatement psG = conn.prepareStatement(sqlCostoGrupo)) {
+                    psG.setInt(1, p.getGrupoId());
+                    try (ResultSet rsG = psG.executeQuery()) {
+                        if (rsG.next() && rsG.getDouble(1) > 0) {
+                            costoCuota = rsG.getDouble(1);
+                        }
+                    }
+                }
+            }
+
+            String sqlMensualidadInicial = """
+                INSERT OR IGNORE INTO mensualidades (
+                    participante_id, periodo, fecha_emision, fecha_vencimiento,
+                    monto_base, descuento, recargo_mora, monto_total, saldo_pendiente, estado_pago
+                ) VALUES (?, ?, ?, ?, ?, 0.0, 0.0, ?, ?, 'VENCE_PRONTO')
+            """;
+            try (PreparedStatement psMen = conn.prepareStatement(sqlMensualidadInicial)) {
+                psMen.setInt(1, participanteId);
+                psMen.setString(2, infoVenc.getPeriodo());
+                psMen.setString(3, fechaIns.toString());
+                psMen.setString(4, infoVenc.getFechaVencimiento().toString());
+                psMen.setDouble(5, costoCuota);
+                psMen.setDouble(6, costoCuota);
+                psMen.setDouble(7, costoCuota);
+                psMen.executeUpdate();
+            }
+
             conn.commit();
             AppSession.registrarAuditoria("REGISTRO_PARTICIPANTE", "participantes",
-                    "Nuevo estudiante inscrito: " + p.getNombreCompleto() + " [" + p.getMatricula() + "]");
+                    "Nuevo estudiante inscrito: " + p.getNombreCompleto() + " [" + p.getMatricula() +
+                    "] - Cuota inicial vence: " + infoVenc.getFechaVencimiento() + " (Corte día " + p.getDiaCorteHabitual() + ")");
             return true;
         } catch (SQLException e) {
             if (conn != null) {
@@ -128,6 +167,7 @@ public class ParticipanteDAO {
             SELECT p.id, p.matricula, p.nombres, p.apellidos, p.fecha_nacimiento,
                    p.foto_ruta, p.contacto_emergencia_nombre, p.contacto_emergencia_telefono,
                    p.alergias_condiciones, p.estado, p.motivo_baja, p.fecha_baja, p.grupo_id,
+                   p.dia_corte_habitual, p.fecha_inscripcion,
                    g.nombre AS nombre_grupo,
                    t.id AS tutor_id, t.nombre_completo AS tutor_nombre, t.cedula AS tutor_cedula,
                    t.telefono_whatsapp AS tutor_whatsapp, t.email AS tutor_email, t.parentesco AS tutor_parentesco
@@ -180,6 +220,9 @@ public class ParticipanteDAO {
                     if (fBaja != null) p.setFechaBaja(LocalDate.parse(fBaja));
                     p.setGrupoId((Integer) rs.getObject("grupo_id"));
                     p.setNombreGrupo(rs.getString("nombre_grupo"));
+                    p.setDiaCorteHabitual(rs.getInt("dia_corte_habitual") > 0 ? rs.getInt("dia_corte_habitual") : 30);
+                    String fIns = rs.getString("fecha_inscripcion");
+                    if (fIns != null) p.setFechaInscripcion(LocalDate.parse(fIns));
 
                     // Tutor
                     if (rs.getObject("tutor_id") != null) {
@@ -225,6 +268,17 @@ public class ParticipanteDAO {
             if (res > 0) {
                 AppSession.registrarAuditoria("CAMBIO_ESTADO", "participantes",
                         "Estudiante ID " + participanteId + " pasó a estado " + nuevoEstado + (motivo != null ? " por: " + motivo : ""));
+
+                // GESTIÓN AUTOMÁTICA EN MENSUALIDADES SEGÚN ESTADO:
+                MensualidadDAO mensualidadDAO = new MensualidadDAO();
+                if ("ACTIVO".equalsIgnoreCase(nuevoEstado)) {
+                    // Si se reactiva, se reincorpora inmediatamente a la lista activa de mensualidades
+                    mensualidadDAO.reintegrarEnMensualidades(participanteId);
+                } else {
+                    // Si pasa a PAUSA o INACTIVO, se quita automáticamente de la lista de mensualidades (no va a pagar)
+                    mensualidadDAO.removerDeListaMensualidades(participanteId, nuevoEstado);
+                }
+
                 return true;
             }
         } catch (SQLException e) {

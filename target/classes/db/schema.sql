@@ -61,6 +61,8 @@ CREATE TABLE IF NOT EXISTS participantes (
     motivo_baja TEXT,
     fecha_baja DATE,
     grupo_id INTEGER,
+    dia_corte_habitual INTEGER DEFAULT 30,
+    fecha_inscripcion DATE DEFAULT CURRENT_DATE,
     creado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (grupo_id) REFERENCES grupos(id) ON DELETE SET NULL
 );
@@ -227,14 +229,6 @@ CREATE TABLE IF NOT EXISTS auditoria_logs (
 -- =============================================================================
 -- DATOS INICIALES / SEMILLAS POR DEFECTO
 -- =============================================================================
-
--- Usuario Administrador inicial (clave por defecto: admin123, hash jBCrypt)
-INSERT OR IGNORE INTO usuarios (id, username, password_hash, nombre_completo, rol, activo)
-VALUES (1, 'admin', '$2a$10$wNcrYJz5kPq/WfQ6eA4pIukm8j2Fh4hUoQz40w7C4N9RjTq6cQeKi', 'Administrador Principal', 'ADMIN', 1);
-
--- Usuario Secretaria por defecto (clave: secretaria123)
-INSERT OR IGNORE INTO usuarios (id, username, password_hash, nombre_completo, rol, activo)
-VALUES (2, 'secretaria', '$2a$10$7v.9T3r/YjD8zI4kM7P7r.Z6v1Y2q8kM8L0y4a1b2c3d4e5f6g7h8', 'Secretaría y Recepción', 'SECRETARIA', 1);
 
 -- Categorías de gastos predeterminadas
 INSERT OR IGNORE INTO categorias_gasto (id, nombre, descripcion) VALUES

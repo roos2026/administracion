@@ -5,6 +5,7 @@ C:\Users\User\Desktop\Administracion\src\main\java\com\academia\dao\CajaDAO.java
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\dao\GastoDAO.java
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\dao\GrupoDAO.java
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\dao\MensualidadDAO.java
+C:\Users\User\Desktop\Administracion\src\main\java\com\academia\dao\NominaDAO.java
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\dao\PagoDAO.java
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\dao\ParticipanteDAO.java
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\dao\ProfesorDAO.java
@@ -20,6 +21,7 @@ C:\Users\User\Desktop\Administracion\src\main\java\com\academia\model\Profesor.j
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\model\Tutor.java
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\model\Usuario.java
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\service\BackupService.java
+C:\Users\User\Desktop\Administracion\src\main\java\com\academia\service\BillingCycleService.java
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\service\ExcelExportService.java
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\service\PDFGeneratorService.java
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\service\WhatsAppService.java
@@ -30,5 +32,6 @@ C:\Users\User\Desktop\Administracion\src\main\java\com\academia\ui\GastosView.ja
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\ui\GruposView.java
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\ui\LoginView.java
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\ui\MainDashboardView.java
+C:\Users\User\Desktop\Administracion\src\main\java\com\academia\ui\NominaView.java
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\ui\ParticipantesView.java
 C:\Users\User\Desktop\Administracion\src\main\java\com\academia\ui\UsuariosView.java

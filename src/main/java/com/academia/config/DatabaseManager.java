@@ -71,9 +71,12 @@ public class DatabaseManager {
                     }
                 }
 
-                // 2. Garantizar programáticamente que los usuarios admin y secretaria existan
-                asegurarUsuarioBase(conn, "admin", "admin123", "Administrador Principal", "ADMIN");
-                asegurarUsuarioBase(conn, "secretaria", "secretaria123", "Secretaría y Recepción", "SECRETARIA");
+                // Migraciones seguras para bases de datos existentes
+                try { stmt.execute("ALTER TABLE participantes ADD COLUMN dia_corte_habitual INTEGER DEFAULT 30;"); } catch (SQLException ignored) {}
+                try { stmt.execute("ALTER TABLE participantes ADD COLUMN fecha_inscripcion DATE;"); } catch (SQLException ignored) {}
+
+                // 2. Sembrar usuario inicial SOLO si la tabla está completamente vacía (instalación limpia)
+                asegurarUsuarioInicialSiTablaVacia(conn);
             }
         } catch (Exception e) {
             System.err.println("Error al inicializar la base de datos: " + e.getMessage());
@@ -81,35 +84,21 @@ public class DatabaseManager {
         }
     }
 
-    private static void asegurarUsuarioBase(Connection conn, String user, String pass, String nombre, String rol) {
-        String sqlCheck = "SELECT id FROM usuarios WHERE LOWER(username) = LOWER(?)";
-        try (PreparedStatement ps = conn.prepareStatement(sqlCheck)) {
-            ps.setString(1, user);
-            try (ResultSet rs = ps.executeQuery()) {
-                String hash = BCrypt.hashpw(pass, BCrypt.gensalt(10));
-                if (!rs.next()) {
-                    // No existe, insertar
-                    String sqlInsert = "INSERT INTO usuarios (username, password_hash, nombre_completo, rol, activo) VALUES (?, ?, ?, ?, 1)";
-                    try (PreparedStatement psIns = conn.prepareStatement(sqlInsert)) {
-                        psIns.setString(1, user);
-                        psIns.setString(2, hash);
-                        psIns.setString(3, nombre);
-                        psIns.setString(4, rol);
-                        psIns.executeUpdate();
-                    }
-                } else {
-                    // Ya existe, actualizar hash para garantizar que coincida exactamente
-                    int id = rs.getInt("id");
-                    String sqlUpd = "UPDATE usuarios SET password_hash = ?, activo = 1 WHERE id = ?";
-                    try (PreparedStatement psUpd = conn.prepareStatement(sqlUpd)) {
-                        psUpd.setString(1, hash);
-                        psUpd.setInt(2, id);
-                        psUpd.executeUpdate();
-                    }
+    private static void asegurarUsuarioInicialSiTablaVacia(Connection conn) {
+        String sqlCheck = "SELECT COUNT(*) FROM usuarios";
+        try (Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery(sqlCheck)) {
+            if (rs.next() && rs.getInt(1) == 0) {
+                // Solo si no existe ningún usuario, crear el admin inicial para el primer acceso
+                String hash = BCrypt.hashpw("admin123", BCrypt.gensalt(10));
+                String sqlInsert = "INSERT INTO usuarios (username, password_hash, nombre_completo, rol, activo) VALUES ('admin', ?, 'Administrador Principal', 'ADMIN', 1)";
+                try (PreparedStatement psIns = conn.prepareStatement(sqlInsert)) {
+                    psIns.setString(1, hash);
+                    psIns.executeUpdate();
                 }
             }
         } catch (SQLException e) {
-            System.err.println("No se pudo asegurar el usuario base " + user + ": " + e.getMessage());
+            System.err.println("Error al verificar usuarios iniciales: " + e.getMessage());
         }
     }
 
